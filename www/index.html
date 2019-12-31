@@ -9,7 +9,10 @@
   <title>GG Diagram</title>
   <script type="text/javascript" src="js/jquery-2.2.4.min.js"></script>
   <script type="text/javascript" src="js/jquery-ui.min.js"></script>
+  <script type="text/javascript" src="js/moment.min.js"></script>
   <script type="text/javascript" src="cordova.js"></script>
+  <script type="text/javascript" src="js/State.js"></script>
+  <script type="text/javascript" src="js/Measurement.js"></script>
   <script type="text/javascript" src="js/Diagram.js"></script>
   <script type="text/javascript" src="js/index.js"></script>
 </head>
@@ -28,21 +31,43 @@
       <option value="10" selected="true">10 m/s<sup>2</sup></option>
       <option value="12">12 m/s<sup>2</sup></option>
     </select>
+    <button id="backToRealtimeButton" onclick="_backToRealtimeButtonClick()"><i class="fa fa-times fa-lg"></i></button>
   </div>
   <div id="controlBox">
     <div class="page" id="pageMenu1">
-      <button id="testButton" onclick="_calibrationStep(0)"><i class="fa fa-compass"></i>キャリブレーション</button>
+      <button id="recordButton" onclick="_recordButtonClick()"><i class="fa fa-circle fa-fw"></i>記録開始</button>
+      <button id="testButton" onclick="_calibrationStep(0)"><i class="fa fa-compass fa-fw"></i>キャリブレーション</button>
     </div>
-    <div class="page" id="pageDebug" style="display:none">
-      <textArea id="logArea"></textArea>
+    <div class="page" id="pageLog" style="display:none">
+      <div class="menu-bar" id="logMenuBar">
+        <a href="javascript:void(0)" id="logLockButton" onclick="_logLockButtonClick()"><i class="fa fa-lock"></i></a>
+        <a href="javascript:void(0)" id="logDeleteButton" onclick="_logDeleteButtonClick()"><i class="fa fa-trash-o"></i></a>
+      </div>
+      <div id="logTableWrapper">
+        <table id="logTable">
+          <thead>
+            <tr>
+              <td class="center"><i class="fa fa-lock"></i></td>
+              <td>日時</td>
+              <td class="right">長さ[s]</td>
+            </tr>
+          </thead>
+          <tbody>
+          </tbody>
+        </table>
+      </div>
     </div>
     <div class="page" id="pageOption" style="display:none">
       Option
     </div>
-    <div id="menuBar">
-      <a href="javascript:void(0)" onclick="_showPage('Menu1')">Menu</a>
-      <a href="javascript:void(0)" onclick="_showPage('Debug')">Debug</a>
+    <div class="page" id="pageDebug" style="display:none">
+      <textArea id="logArea"></textArea>
+    </div>
+    <div class="menu-bar" id="mainMenuBar">
+      <a href="javascript:void(0)" onclick="_showPage('Menu1')"><i class="fa fa-home"></i></a>
+      <a href="javascript:void(0)" onclick="_showPage('Log'); _refreshLogTable()"><i class="fa fa-history"></i></a>
       <a href="javascript:void(0)" onclick="_showPage('Option')"><i class="fa fa-gear"></i></a>
+      <a href="javascript:void(0)" onclick="_showPage('Debug')" style="display:none"><i class="fa fa-desktop"></i></a>
     </div>
   </div>
   <div id="calibrationBox">

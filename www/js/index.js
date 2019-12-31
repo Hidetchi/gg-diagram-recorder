@@ -17,6 +17,13 @@ var measurementMem2 = []
 var measurementMem3 = []
 var measurementMem4 = []
 var measurementMode = null // 1: Z-calibration, 2: X-calibration
+var buf = []
+var nBuf = 1000
+var startedAt // Start time of a measurement
+var recording = false // Boolean flag indicating whether it is recording
+var dataHeaders
+var selectedLogTimestamp
+var realtimeMonitoring = true
 
 document.addEventListener("deviceready", onDeviceReady, false)
 
@@ -47,18 +54,22 @@ $(function(){
   })*/
 
   diagram = new Diagram(document.getElementById("diagramCanvas"))
-  let tmp = localStorage.getItem("diagramRange")
-  if (tmp) {
-    diagram.max = tmp
-    $('#diagramRangeSelect').val(tmp)
+  if (!localStorage.getItem("termsAgreed")){
+    alert("【使用上の注意】公道を走行中の画面操作・画面注視は法令違反です。法令を遵守してご使用下さい。")
+    localStorage.setItem("termsAgreed", true)
   }
-  tmp = localStorage.getItem("directionVector")
-  if (tmp) {
-    let h = JSON.parse(tmp)
+
+  diagram.max = getLocalStorage("diagramRange", 10)
+  $('#diagramRangeSelect').val(diagram.max)
+
+  let h = getLocalStorage("directionVector", null)
+  if (h) {
     ex1 = h.ex1; ex2 = h.ex2; ex3 = h.ex3
     ey1 = h.ey1; ey2 = h.ey2; ey3 = h.ey3
     ez1 = h.ez1; ez2 = h.ez2; ez3 = h.ez3
   }
+
+  dataHeaders = getLocalStorage("dataHeaders", [])
   _resize()
 
 
@@ -71,29 +82,33 @@ $(function(){
       measurementMem3.push(gz0)
       if (measurementMode == 3) measurementMem4.push(Date.now())
     }
+    let timeStamp = Date.now()
 
     ax = ex1 * gx0 + ex2 * gy0 + ex3 * gz0
     ay = ey1 * gx0 + ey2 * gy0 + ey3 * gz0
-    diagram.drawCurrent()
-    let str = ""
-    str += gx0.toFixed(2) + "\n"
-    str += gy0.toFixed(2) + "\n"
-    str += gz0.toFixed(2) + "\n"
-    //str += ax0.toFixed(2) + "\n"
-    //str += ay0.toFixed(2) + "\n"
-    //str += az0.toFixed(2) + "\n"
-    str += ax.toFixed(2) + "\n"
-    str += ay.toFixed(2) + "\n"
-    str += Date.now() + "\n"
-    str += ox0.toFixed(2) + "\n"
-    str += oy0.toFixed(2) + "\n"
-    str += oz0.toFixed(2) + "\n"
-    str += alpha.toFixed(2) + "\n"
-    str += beta.toFixed(2) + "\n"
-    str += gamma.toFixed(2) + "\n"
-    str += interval + "\n"
-    _showLog(str)
-    diagram.addLocus(ax, ay)
+    if (realtimeMonitoring) {
+      diagram.drawCurrent()
+      let str = ""
+      str += gx0.toFixed(2) + "\n"
+      str += gy0.toFixed(2) + "\n"
+      str += gz0.toFixed(2) + "\n"
+      //str += ax0.toFixed(2) + "\n"
+      //str += ay0.toFixed(2) + "\n"
+      //str += az0.toFixed(2) + "\n"
+      str += ax.toFixed(2) + "\n"
+      str += ay.toFixed(2) + "\n"
+      str += timeStamp + "\n"
+      str += ox0.toFixed(2) + "\n"
+      str += oy0.toFixed(2) + "\n"
+      str += oz0.toFixed(2) + "\n"
+      str += alpha.toFixed(2) + "\n"
+      str += beta.toFixed(2) + "\n"
+      str += gamma.toFixed(2) + "\n"
+      str += interval + "\n"
+      _showLog(str)
+    }
+    buf.push(new State(ax, ay, timeStamp))
+    if (buf.length > nBuf) buf.shift()
   }, 1000 * dt)
 })
 
@@ -151,7 +166,7 @@ function _handleDeviceOrientation(e){
 
 function _calibrationStep(n){
   $('#calibrationBox').children('div').hide()
-  if (n==0) {
+  if (n==0 && !recording) {
     $('#controlBox').hide()
     $('#calibrationBox').show()
     $('#calibrationStep0').show()
@@ -190,6 +205,7 @@ function _showLog(str){
 }
 
 function _showPage(pageName){
+  if (recording) return
   $('.page').hide()
   $('#page' + pageName).show()
 }
@@ -260,6 +276,109 @@ function _changeDiagramRange(max){
   localStorage.setItem("diagramRange", max)
 }
 
+function _recordButtonClick(){
+  if (recording) {
+    $('#recordButton').css('background', '#292').html("<i class='fa fa-circle fa-fw'></i>記録開始")
+    recording = false
+    let endedAt = Date.now()
+    let measurement = new Measurement(startedAt, endedAt)
+    for (let i = 0; i < buf.length; i++){
+      if (buf[i].t >= startedAt) measurement.addState(new State(buf[i].ax, buf[i].ay, buf[i].t))
+    }
+    dataHeaders.unshift({startedAt: startedAt, endedAt: endedAt})
+    writeDataHeaders()
+    localStorage.setItem("data_" + endedAt, JSON.stringify(measurement))
+  } else {
+    startedAt = Date.now()
+    $('#recordButton').css('background', '#a22').html("<span style='font-size:0.5em'>記録中...</span><br><i class='fa fa-stop fa-fw'></i>終了")
+    recording = true
+  }
+}
+
+function _refreshLogTable(){
+  let tbody = $('#logTable').find('tbody')
+  tbody.empty()
+  dataHeaders.forEach(function(header){
+    let date = moment(header.endedAt)
+    tbody.append(
+      "<tr data-timestamp='" + header.endedAt + "'>" +
+      "<td class='center'>" + (header.locked ? "<i class='fa fa-lock'></i>" : "") + "</td>" +
+      "<td>" + date.format('YYYY-MM-DD hh:mm:ss') + "</td>" +
+      "<td class='right'>" + Math.round((header.endedAt - header.startedAt)/100)/10 + "</td>" +
+      "</tr>"
+    )
+  })
+  tbody.find('tr').click(function(){
+    tbody.find('tr').removeClass('row-selected')
+    $(this).addClass('row-selected')
+    selectedLogTimestamp = $(this).data('timestamp')
+    diagram.drawRecord(selectedLogTimestamp)
+  })
+  selectedLogTimestamp = null
+}
+
+function _logDeleteButtonClick(){
+  if (selectedLogTimestamp == null) return
+  _deleteLog(selectedLogTimestamp, true)
+  _refreshLogTable()
+}
+
+function _logLockButtonClick(){
+  if (selectedLogTimestamp == null) return
+  let i = findIndexInDataHeadersFromTimestamp(selectedLogTimestamp)
+  if (i == null) return
+  if (dataHeaders[i].locked) {
+    delete dataHeaders[i].locked
+  } else {
+    dataHeaders[i].locked = true
+  }
+  writeDataHeaders()
+  _refreshLogTable()
+}
+
+function _deleteLog(endedAt, warn = false){
+  // warn: Stop deleting with an alert if the item is locked
+  let i = findIndexInDataHeadersFromTimestamp(endedAt)
+  if (i == null) return
+  if (warn && dataHeaders[i].locked){
+    alert('このデータはロックされているため削除できません')
+    return
+  }
+  dataHeaders.splice(i, 1)
+  writeDataHeaders()
+  localStorage.removeItem("data_" + endedAt)
+}
+
+function writeDataHeaders(){
+  localStorage.setItem("dataHeaders", JSON.stringify(dataHeaders))
+}
+
+function findIndexInDataHeadersFromTimestamp(endedAt){
+  let iFound = null
+  for (let i = 0; i < dataHeaders.length; i++){
+    if (dataHeaders[i].endedAt == endedAt){
+      iFound = i
+      break
+    }
+  }
+  return iFound
+}
+
+function toggleRealtime(bool){
+  // bool: Realtime mode ON or OFF
+  if (bool) {
+    realtimeMonitoring = true
+    $('#backToRealtimeButton').hide()
+  } else {
+    realtimeMonitoring = false
+    $('#backToRealtimeButton').show()
+  }
+}
+
+function _backToRealtimeButtonClick(){
+  toggleRealtime(true)
+}
+
 /* ====================================
     Utilities
 ===================================== */
@@ -275,4 +394,13 @@ function avgArr(arr){
     sum += elm
   })
   return sum / arr.length
+}
+
+function getLocalStorage(key, initial){
+  let tmp = localStorage.getItem(key)
+  if (tmp) {
+    return JSON.parse(tmp)
+  } else {
+    return initial
+  }
 }
