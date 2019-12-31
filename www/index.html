@@ -1,0 +1,70 @@
+<html>
+<head>
+  <meta name="format-detection" content="telephone=no">
+  <meta name="msapplication-tap-highlight" content="no">
+  <meta name="viewport" content="initial-scale=1, width=device-width, viewport-fit=cover">
+  <link rel="stylesheet" type="text/css" href="css/jquery-ui.css">
+  <link rel="stylesheet" type="text/css" href="css/index.min.css">
+  <link rel="stylesheet" type="text/css" href="css/font-awesome.min.css">
+  <title>GG Diagram</title>
+  <script type="text/javascript" src="js/jquery-2.2.4.min.js"></script>
+  <script type="text/javascript" src="js/jquery-ui.min.js"></script>
+  <script type="text/javascript" src="cordova.js"></script>
+  <script type="text/javascript" src="js/Diagram.js"></script>
+  <script type="text/javascript" src="js/index.js"></script>
+</head>
+<body>
+  <div id="diagramBox">
+    <canvas id="diagramCanvas"></canvas>
+    <div id="verticalGuide"></div>
+    <div id="horizontalGuide"></div>
+    <div id="circleGuideInner"></div>
+    <div id="circleGuideOuter"></div>
+    <select id="diagramRangeSelect" onchange="_changeDiagramRange(parseFloat(this.value))">
+      <option value="4">4 m/s<sup>2</sup></option>
+      <option value="5">5 m/s<sup>2</sup></option>
+      <option value="6">6 m/s<sup>2</sup></option>
+      <option value="8">8 m/s<sup>2</sup></option>
+      <option value="10" selected="true">10 m/s<sup>2</sup></option>
+      <option value="12">12 m/s<sup>2</sup></option>
+    </select>
+  </div>
+  <div id="controlBox">
+    <div class="page" id="pageMenu1">
+      <button id="testButton" onclick="_calibrationStep(0)"><i class="fa fa-compass"></i>キャリブレーション</button>
+    </div>
+    <div class="page" id="pageDebug" style="display:none">
+      <textArea id="logArea"></textArea>
+    </div>
+    <div class="page" id="pageOption" style="display:none">
+      Option
+    </div>
+    <div id="menuBar">
+      <a href="javascript:void(0)" onclick="_showPage('Menu1')">Menu</a>
+      <a href="javascript:void(0)" onclick="_showPage('Debug')">Debug</a>
+      <a href="javascript:void(0)" onclick="_showPage('Option')"><i class="fa fa-gear"></i></a>
+    </div>
+  </div>
+  <div id="calibrationBox">
+    <div id="calibrationStep0">
+      端末を車両に固定した後、車両を停止させてから、スタートをタップ<br>
+      <button onclick="_calibrationStep(1)">スタート</button>
+    </div>
+    <div id="calibrationStep1">
+      Z方向を認識中... <br>(2秒間)
+    </div>
+    <div id="calibrationStep2">
+      Z方向を認識しました。<br>
+      次にX方向を設定します。<br>
+      下のスタートボタンをタップ後、真っ直ぐ加速し、真っ直ぐ制動して下さい。<br>
+      <button onclick="_calibrationStep(3)">スタート</button>
+    </div>
+    <div id="calibrationStep3">
+      X方向を計測中...<br>
+      真っ直ぐ加速し、真っ直ぐ制動して下さい。<br>
+      加速と制動が終わったら「計測完了」をタップして下さい。<br>
+      <button onclick="_calibrationStep(4)">計測完了</button>
+    <div>
+  </div>
+</body>
+</html>
