@@ -23,6 +23,12 @@
             <uses-permission android:name="android.permission.WAKE_LOCK" />
         </config-file>
         <allow-intent href="market:*" />
+        <icon density="ldpi" src="res/icon/android/icon-36.png" />
+        <icon density="mdpi" src="res/icon/android/icon-48.png" />
+        <icon density="hdpi" src="res/icon/android/icon-72.png" />
+        <icon density="xhdpi" src="res/icon/android/icon-96.png" />
+        <icon density="xxhdpi" src="res/icon/android/icon-144.png" />
+        <icon density="xxxhdpi" src="res/icon/android/icon-192.png" />
     </platform>
     <platform name="ios">
         <allow-intent href="itms:*" />
