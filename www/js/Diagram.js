@@ -17,9 +17,10 @@ class Diagram{
 
   drawCurrent(){
     this.clear()
+    let c = this.reverse ? 1 : -1
     for (let i = Math.max(0, buf.length - this.locusN); i < buf.length; i++){
       this.ctx.beginPath()
-      this.ctx.arc(this.W/2 - buf[i].ay * this.W/2/this.max, this.H/2 - buf[i].ax * this.H/2/this.max, 5, 0, 2 * Math.PI)
+      this.ctx.arc(this.W/2 + c * buf[i].ay * this.W/2/this.max, this.H/2 + c * buf[i].ax * this.H/2/this.max, 5, 0, 2 * Math.PI)
       //let brightness = Math.round(255 - 255 * i / buf.length)
       //this.ctx.fillStyle = "rgb(" + brightness + "," + brightness + "," + brightness + ")"
       //let brightness = Math.round(255 * (this.locusN - buf.length + i) / this.locusN)
@@ -28,7 +29,7 @@ class Diagram{
       this.ctx.fill()
     }
     this.ctx.beginPath()
-    this.ctx.arc(this.W/2 - ay * this.W/2/this.max, this.H/2 - ax * this.H/2/this.max, 12, 0, 2 * Math.PI)
+    this.ctx.arc(this.W/2 + c * ay * this.W/2/this.max, this.H/2 + c * ax * this.H/2/this.max, 12, 0, 2 * Math.PI)
     this.ctx.fillStyle="red"
     this.ctx.fill()
   }
@@ -36,13 +37,13 @@ class Diagram{
   drawRecord(timestamp){
     toggleRealtime(false)
     this.clear()
+    let c = this.reverse ? 1 : -1
     let h = getLocalStorage("data_" + timestamp, null)
     if (h == null) return
-    console.log(h.data)
     this.ctx.fillStyle="limegreen"
     for (let i = 0; i < h.data.length; i++){
       this.ctx.beginPath()
-      this.ctx.arc(this.W/2 - h.data[i].ay * this.W/2/this.max, this.H/2 - h.data[i].ax * this.H/2/this.max, 5, 0, 2 * Math.PI)
+      this.ctx.arc(this.W/2 + c * h.data[i].ay * this.W/2/this.max, this.H/2 + c * h.data[i].ax * this.H/2/this.max, 5, 0, 2 * Math.PI)
       this.ctx.fill()
     }
   }

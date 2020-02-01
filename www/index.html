@@ -7,9 +7,9 @@
   <link rel="stylesheet" type="text/css" href="css/index.min.css">
   <link rel="stylesheet" type="text/css" href="css/font-awesome.min.css">
   <title>GG Diagram</title>
-  <script type="text/javascript" src="js/jquery-2.2.4.min.js"></script>
+  <script type="text/javascript" src="js/jquery-3.4.1.min.js"></script>
   <script type="text/javascript" src="js/jquery-ui.min.js"></script>
-  <script type="text/javascript" src="js/moment.min.js"></script>
+  <script type="text/javascript" src="js/moment-with-locales.min.js"></script>
   <script type="text/javascript" src="cordova.js"></script>
   <script type="text/javascript" src="js/State.js"></script>
   <script type="text/javascript" src="js/Measurement.js"></script>
@@ -49,7 +49,8 @@
             <tr>
               <td class="center"><i class="fa fa-lock"></i></td>
               <td>日時</td>
-              <td class="right">長さ[s]</td>
+              <td>情報</td>
+              <td class="right">[s]</td>
             </tr>
           </thead>
           <tbody>
@@ -58,7 +59,19 @@
       </div>
     </div>
     <div class="page" id="pageOption" style="display:none">
-      Option
+      ドライバー: <input type="text" id="driverNameInput" value="Unknown" size="10" onchange="_driverNameChange(this)"/><br>
+      車両: <input type="text" id="vehicleNameInput" value="Unknown" size="10" onchange="_vehicleNameChange(this)"/><br>
+      <p>
+        <label>
+          <input type="checkbox" id="reverseAxisCheckbox" onchange="_toggleReverseAxis(this.checked)">
+          軸を反転(慣性力方向)
+        </label>
+        <br>
+        <label>
+          <input type="checkbox" id="previewEachCheckbox" onchange="_togglePreviewEach(this.checked)">
+          計測毎に結果を表示
+        </label>
+      </p>
     </div>
     <div class="page" id="pageDebug" style="display:none">
       <textArea id="logArea"></textArea>

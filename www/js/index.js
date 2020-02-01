@@ -24,6 +24,9 @@ var recording = false // Boolean flag indicating whether it is recording
 var dataHeaders
 var selectedLogTimestamp
 var realtimeMonitoring = true
+var driverName
+var vehicleName
+var previewEach // Boolean option
 
 document.addEventListener("deviceready", onDeviceReady, false)
 
@@ -39,7 +42,7 @@ $(function(){
   }
   $(window).on("beforeunload",function(e){
   })
-  $(window).unload(function(){
+  $(window).on("unload", function(e){
   })
   window.addEventListener("devicemotion", _handleDeviceMotion, true)
   window.addEventListener("deviceorientation", _handleDeviceOrientation, true)
@@ -53,6 +56,7 @@ $(function(){
     $("div.dynamic-spacer").css('flex', '1 1 0%')
   })*/
 
+  // Check Local Storage
   diagram = new Diagram(document.getElementById("diagramCanvas"))
   if (!localStorage.getItem("termsAgreed")){
     alert("【使用上の注意】公道を走行中の画面操作・画面注視は法令違反です。法令を遵守してご使用下さい。")
@@ -61,6 +65,14 @@ $(function(){
 
   diagram.max = getLocalStorage("diagramRange", 10)
   $('#diagramRangeSelect').val(diagram.max)
+  driverName = getLocalStorage("driverName", "Unknown")
+  $('#driverNameInput').val(driverName)
+  vehicleName = getLocalStorage("vehicleName", "Unknown")
+  $('#vehicleNameInput').val(vehicleName)
+  diagram.reverse = getLocalStorage("reverseAxis", false)
+  $('#reverseAxisCheckbox').prop('checked', diagram.reverse)
+  previewEach = getLocalStorage("previewEach", false)
+  $('#previewEachCheckbox').prop('checked', previewEach)
 
   let h = getLocalStorage("directionVector", null)
   if (h) {
@@ -120,7 +132,7 @@ function onDeviceReady(){
   if (cordova.platformId == 'android') platform = 'Android'
   else if (cordova.platformId == 'ios') platform = 'iOS'
   else if (cordova.windowsId == 'windows') platform = 'Windows'
-  //if (platform == 'Android') AndroidFullScreen.immersiveMode()
+  if (platform == 'Android') AndroidFullScreen.immersiveMode()
   //window.open = cordova.InAppBrowser.open
   document.addEventListener("pause", function(){
   }, false)
@@ -282,13 +294,19 @@ function _recordButtonClick(){
     recording = false
     let endedAt = Date.now()
     let measurement = new Measurement(startedAt, endedAt)
+    let genuineStartedAt = null
     for (let i = 0; i < buf.length; i++){
-      if (buf[i].t >= startedAt) measurement.addState(new State(buf[i].ax, buf[i].ay, buf[i].t))
+      if (buf[i].t >= startedAt) {
+        if (genuineStartedAt == null) genuineStartedAt = buf[i].t
+        measurement.addState(new State(buf[i].ax, buf[i].ay, buf[i].t - genuineStartedAt))
+      }
     }
-    dataHeaders.unshift({startedAt: startedAt, endedAt: endedAt})
+    dataHeaders.unshift({startedAt: genuineStartedAt || startedAt, endedAt: endedAt, driver: driverName, vehicle: vehicleName})
     writeDataHeaders()
     localStorage.setItem("data_" + endedAt, JSON.stringify(measurement))
+    if (previewEach) diagram.drawRecord(endedAt)
   } else {
+    toggleRealtime(true)
     startedAt = Date.now()
     $('#recordButton').css('background', '#a22').html("<span style='font-size:0.5em'>記録中...</span><br><i class='fa fa-stop fa-fw'></i>終了")
     recording = true
@@ -300,10 +318,12 @@ function _refreshLogTable(){
   tbody.empty()
   dataHeaders.forEach(function(header){
     let date = moment(header.endedAt)
+    date.locale('ja')
     tbody.append(
       "<tr data-timestamp='" + header.endedAt + "'>" +
       "<td class='center'>" + (header.locked ? "<i class='fa fa-lock'></i>" : "") + "</td>" +
-      "<td>" + date.format('YYYY-MM-DD hh:mm:ss') + "</td>" +
+      "<td class='small'>" + date.format('YYYY-MM-DD') + "<br>" + date.format('hh:mm:ss') + " (" + date.fromNow() + ")</td>" +
+      "<td class='small'>" + header.driver + "<br>" + header.vehicle + "</td>" +
       "<td class='right'>" + Math.round((header.endedAt - header.startedAt)/100)/10 + "</td>" +
       "</tr>"
     )
@@ -379,6 +399,26 @@ function _backToRealtimeButtonClick(){
   toggleRealtime(true)
 }
 
+function _driverNameChange(elem){
+  driverName = $(elem).val()
+  localStorage.setItem("driverName", driverName)
+}
+
+function _vehicleNameChange(elem){
+  vehicleName = $(elem).val()
+  localStorage.setItem("vehicleName", vehicleName)
+}
+
+function _toggleReverseAxis(checked){
+  diagram.reverse = checked
+  localStorage.setItem("reverseAxis", checked)
+}
+
+function _togglePreviewEach(checked){
+  previewEach = checked
+  localStorage.setItem("previewEach", checked)
+}
+
 /* ====================================
     Utilities
 ===================================== */
@@ -399,7 +439,13 @@ function avgArr(arr){
 function getLocalStorage(key, initial){
   let tmp = localStorage.getItem(key)
   if (tmp) {
-    return JSON.parse(tmp)
+    try {
+      return JSON.parse(tmp)
+    } catch { // When it is just a string
+      if (tmp == "true") return true
+      else if (tmp == "false") return false
+      else return tmp // Return the string itself
+    }
   } else {
     return initial
   }
