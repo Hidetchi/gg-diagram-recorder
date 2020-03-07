@@ -32,6 +32,7 @@
       <option value="10" selected="true">10 m/s<sup>2</sup></option>
       <option value="12">12 m/s<sup>2</sup></option>
     </select>
+    <button id="animateRecordButton" onclick="_animateRecordButtonClick()"><i class="fa fa-play fa-lg"></i></button>
     <button id="backToRealtimeButton" onclick="_backToRealtimeButtonClick()"><i class="fa fa-times fa-lg"></i></button>
   </div>
   <div id="controlBox">
@@ -41,6 +42,7 @@
     </div>
     <div class="page" id="pageLog" style="display:none">
       <div class="menu-bar" id="logMenuBar">
+        <a href="javascript:void(0)" id="logPinButton" onclick="_logPinButtonClick()"><i class="fa fa-thumb-tack"></i></a>
         <a href="javascript:void(0)" id="logLockButton" onclick="_logLockButtonClick()"><i class="fa fa-lock"></i></a>
         <a href="javascript:void(0)" id="logDeleteButton" onclick="_logDeleteButtonClick()"><i class="fa fa-trash-o"></i></a>
       </div>
@@ -72,6 +74,15 @@
           <input type="checkbox" id="previewEachCheckbox" onchange="_togglePreviewEach(this.checked)">
           計測毎に結果を表示
         </label>
+      </p>
+      <p>
+        スムージング:
+        <select id="filterStrengthSelect" onchange="_changeFilterStrength(parseFloat(this.value))">
+          <option value="0.5">OFF</option>
+          <option value="0.3">弱</option>
+          <option value="0.15" selected="true">中</option>
+          <option value="0.1">強</option>
+        </select>
       </p>
     </div>
     <div class="page" id="pageDebug" style="display:none">

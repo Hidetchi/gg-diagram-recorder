@@ -13,21 +13,23 @@ var ez1 = 0, ez2 = 0, ez3 = 1 // Direction cosine of Z
 var ax, ay
 var diagram
 var interval
-var measurementMem1 = []
+var measurementMem1 = [] // measurement buffer for general use
 var measurementMem2 = []
 var measurementMem3 = []
 var measurementMem4 = []
 var measurementMode = null // 1: Z-calibration, 2: X-calibration
-var buf = []
+var buf = [] // buffer for most recent data in realtime
 var nBuf = 1000
 var startedAt // Start time of a measurement
 var recording = false // Boolean flag indicating whether it is recording
 var dataHeaders
 var selectedLogTimestamp
+var pinnedLogTimeStamp
 var realtimeMonitoring = true
 var driverName
 var vehicleName
 var previewEach // Boolean option
+var filterStrength = 0.15
 
 document.addEventListener("deviceready", onDeviceReady, false)
 
@@ -47,15 +49,6 @@ $(function(){
   })
   window.addEventListener("devicemotion", _handleDeviceMotion, true)
   window.addEventListener("deviceorientation", _handleDeviceOrientation, true)
-  //$("[tappable=true]").each(function(){ tappablize($(this)) })
-  //$(".ui-dialog-titlebar-close").click(function(){sp.buttonClick("CANCEL")})
-  //tappablize($(".ui-dialog-titlebar-close"), false)
-  /*$("input[type=text], input[type=password]", $("#loginForm")).on('focus', function(){
-    if (platform == 'Android') $("div.dynamic-spacer").css('flex', '0 0 0%')
-  })
-  $("input[type=text], input[type=password]", $("#loginForm")).on('blur', function(){
-    $("div.dynamic-spacer").css('flex', '1 1 0%')
-  })*/
 
   // Check Local Storage
   diagram = new Diagram(document.getElementById("diagramCanvas"))
@@ -74,6 +67,8 @@ $(function(){
   $('#reverseAxisCheckbox').prop('checked', diagram.reverse)
   previewEach = getLocalStorage("previewEach", false)
   $('#previewEachCheckbox').prop('checked', previewEach)
+  filterStrength = getLocalStorage("filterStrength", 0.15)
+  $('#filterStrengthSelect').val(filterStrength)
 
   let h = getLocalStorage("directionVector", null)
   if (h) {
@@ -163,9 +158,9 @@ function _handleDeviceMotion(e){
   //ax0 = e.acceleration.x
   //ay0 = e.acceleration.y
   //az0 = e.acceleration.z
-  gx0 = 0.85 * gx0 + reverseFactor * 0.15 * e.accelerationIncludingGravity.x // Low-pass filter
-  gy0 = 0.85 * gy0 + reverseFactor * 0.15 * e.accelerationIncludingGravity.y // Low-pass filter
-  gz0 = 0.85 * gz0 + reverseFactor * 0.15 * e.accelerationIncludingGravity.z // Low-pass filter
+  gx0 = (1 - filterStrength) * gx0 + filterStrength * reverseFactor * e.accelerationIncludingGravity.x // Low-pass filter
+  gy0 = (1 - filterStrength) * gy0 + filterStrength * reverseFactor * e.accelerationIncludingGravity.y // Low-pass filter
+  gz0 = (1 - filterStrength) * gz0 + filterStrength * reverseFactor * e.accelerationIncludingGravity.z // Low-pass filter
   ox0 = e.rotationRate.alpha
   oy0 = e.rotationRate.beta
   oz0 = e.rotationRate.gamma
@@ -178,6 +173,204 @@ function _handleDeviceOrientation(e){
   gamma = e.gamma
 }
 
+function _showLog(str){
+  $('#logArea').val(str)
+}
+
+function _showPage(pageName){
+  if (recording) return
+  $('.page').hide()
+  $('#page' + pageName).show()
+}
+
+function _clearMeasurement(){
+  measurementMem1 = []
+  measurementMem2 = []
+  measurementMem3 = []
+  measurementMem4 = []
+}
+
+function _changeDiagramRange(max){
+  diagram.max = max
+  localStorage.setItem("diagramRange", max)
+  if (!realtimeMonitoring) diagram.visualizeRecords()
+}
+
+function _recordButtonClick(){
+  if (recording) {
+    $('#recordButton').css('background', '#292').html("<i class='fa fa-circle fa-fw'></i>記録開始")
+    recording = false
+    let endedAt = Date.now()
+    let measurement = new Measurement(startedAt, endedAt)
+    let genuineStartedAt = null
+    for (let i = 0; i < buf.length; i++){
+      if (buf[i].t >= startedAt) {
+        if (genuineStartedAt == null) genuineStartedAt = buf[i].t
+        measurement.addState(new State(buf[i].ax, buf[i].ay, buf[i].t - genuineStartedAt))
+      }
+    }
+    dataHeaders.unshift({startedAt: genuineStartedAt || startedAt, endedAt: endedAt, driver: driverName, vehicle: vehicleName})
+    writeDataHeaders()
+    localStorage.setItem("data_" + endedAt, JSON.stringify(measurement))
+    if (previewEach) {
+      diagram.loadData(endedAt)
+      diagram.visualizeRecords()
+    }
+  } else {
+    toggleRealtime(true)
+    startedAt = Date.now()
+    $('#recordButton').css('background', '#a22').html("<span style='font-size:0.5em'>記録中...</span><br><i class='fa fa-stop fa-fw'></i>終了")
+    recording = true
+  }
+}
+
+/* ====================================
+    Log page
+===================================== */
+
+function _refreshLogTable(){
+  let tbody = $('#logTable').find('tbody')
+  tbody.empty()
+  dataHeaders.forEach(function(header){
+    let date = moment(header.endedAt)
+    date.locale('ja')
+    tbody.append(
+      "<tr data-timestamp='" + header.endedAt + "'>" +
+      "<td class='center'>" + (header.endedAt == pinnedLogTimeStamp ? "<i class='fa fa-thumb-tack' style='color:limegreen'></i><br>" : "") + (header.locked ? "<i class='fa fa-lock'></i>" : "") + "</td>" +
+      "<td class='small'>" + date.format('YYYY-MM-DD') + "<br>" + date.format('hh:mm:ss') + " (" + date.fromNow() + ")</td>" +
+      "<td class='small'>" + header.driver + "<br>" + header.vehicle + "</td>" +
+      "<td class='right'>" + Math.round((header.endedAt - header.startedAt)/100)/10 + "</td>" +
+      "</tr>"
+    )
+  })
+  tbody.find('tr').click(function(){
+    tbody.find('tr').removeClass('row-selected')
+    $(this).addClass('row-selected')
+    selectedLogTimestamp = $(this).data('timestamp')
+    diagram.loadData(selectedLogTimestamp)
+    diagram.visualizeRecords()
+  })
+  selectedLogTimestamp = null
+}
+
+function _logPinButtonClick(){
+  if (selectedLogTimestamp == null) return
+  if (pinnedLogTimeStamp == selectedLogTimestamp) {
+    pinnedLogTimeStamp = null
+    diagram.loadData(null, true)
+  } else {
+    pinnedLogTimeStamp = selectedLogTimestamp
+    diagram.loadData(null)
+    diagram.loadData(pinnedLogTimeStamp, true)
+  }
+  _refreshLogTable()
+  diagram.visualizeRecords()
+}
+
+function _logDeleteButtonClick(){
+  if (selectedLogTimestamp == null) return
+  _deleteLog(selectedLogTimestamp, true)
+  _refreshLogTable()
+}
+
+function _logLockButtonClick(){
+  if (selectedLogTimestamp == null) return
+  let i = findIndexInDataHeadersFromTimestamp(selectedLogTimestamp)
+  if (i == null) return
+  if (dataHeaders[i].locked) {
+    delete dataHeaders[i].locked
+  } else {
+    dataHeaders[i].locked = true
+  }
+  writeDataHeaders()
+  _refreshLogTable()
+}
+
+function _deleteLog(endedAt, warn = false){
+  // warn: Stop deleting with an alert if the item is locked
+  let i = findIndexInDataHeadersFromTimestamp(endedAt)
+  if (i == null) return
+  if (warn && dataHeaders[i].locked){
+    alert('このデータはロックされているため削除できません')
+    return
+  }
+  dataHeaders.splice(i, 1)
+  writeDataHeaders()
+  localStorage.removeItem("data_" + endedAt)
+}
+
+function writeDataHeaders(){
+  localStorage.setItem("dataHeaders", JSON.stringify(dataHeaders))
+}
+
+function findIndexInDataHeadersFromTimestamp(endedAt){
+  let iFound = null
+  for (let i = 0; i < dataHeaders.length; i++){
+    if (dataHeaders[i].endedAt == endedAt){
+      iFound = i
+      break
+    }
+  }
+  return iFound
+}
+
+function _animateRecordButtonClick(){
+  diagram.animateRecords()
+}
+
+function toggleRealtime(bool){
+  // bool: Realtime mode ON or OFF
+  if (bool) {
+    realtimeMonitoring = true
+    diagram.stopAnimation()
+    $('#animateRecordButton').hide()
+    $('#backToRealtimeButton').hide()
+  } else {
+    realtimeMonitoring = false
+    $('#animateRecordButton').show()
+    $('#backToRealtimeButton').show()
+  }
+}
+
+function _backToRealtimeButtonClick(){
+  toggleRealtime(true)
+}
+
+/* ====================================
+    Option page
+===================================== */
+
+function _driverNameChange(elem){
+  driverName = $(elem).val()
+  localStorage.setItem("driverName", driverName)
+}
+
+function _vehicleNameChange(elem){
+  vehicleName = $(elem).val()
+  localStorage.setItem("vehicleName", vehicleName)
+}
+
+function _toggleReverseAxis(checked){
+  diagram.reverse = checked
+  localStorage.setItem("reverseAxis", checked)
+  if (!realtimeMonitoring) diagram.visualizeRecords()
+}
+
+function _togglePreviewEach(checked){
+  previewEach = checked
+  localStorage.setItem("previewEach", checked)
+}
+
+function _changeFilterStrength(v){
+  filterStrength = v
+  localStorage.setItem("filterStrength", filterStrength)
+}
+
+/* ====================================
+    Calibration
+===================================== */
+
+// キャリブレーションの各工程の処理を書くfunction
 function _calibrationStep(n){
   $('#calibrationBox').children('div').hide()
   if (n==0 && !recording) {
@@ -212,23 +405,6 @@ function _calibrationStep(n){
     $('#controlBox').show()
     $('#calibrationBox').hide()
   }
-}
-
-function _showLog(str){
-  $('#logArea').val(str)
-}
-
-function _showPage(pageName){
-  if (recording) return
-  $('.page').hide()
-  $('#page' + pageName).show()
-}
-
-function _clearMeasurement(){
-  measurementMem1 = []
-  measurementMem2 = []
-  measurementMem3 = []
-  measurementMem4 = []
 }
 
 function _calculateOrientationZ(){
@@ -283,142 +459,6 @@ function _calculateOrientationXY(){
     ey2 = - ey2
     ey3 = - ey3
   }
-}
-
-function _changeDiagramRange(max){
-  diagram.max = max
-  localStorage.setItem("diagramRange", max)
-}
-
-function _recordButtonClick(){
-  if (recording) {
-    $('#recordButton').css('background', '#292').html("<i class='fa fa-circle fa-fw'></i>記録開始")
-    recording = false
-    let endedAt = Date.now()
-    let measurement = new Measurement(startedAt, endedAt)
-    let genuineStartedAt = null
-    for (let i = 0; i < buf.length; i++){
-      if (buf[i].t >= startedAt) {
-        if (genuineStartedAt == null) genuineStartedAt = buf[i].t
-        measurement.addState(new State(buf[i].ax, buf[i].ay, buf[i].t - genuineStartedAt))
-      }
-    }
-    dataHeaders.unshift({startedAt: genuineStartedAt || startedAt, endedAt: endedAt, driver: driverName, vehicle: vehicleName})
-    writeDataHeaders()
-    localStorage.setItem("data_" + endedAt, JSON.stringify(measurement))
-    if (previewEach) diagram.drawRecord(endedAt)
-  } else {
-    toggleRealtime(true)
-    startedAt = Date.now()
-    $('#recordButton').css('background', '#a22').html("<span style='font-size:0.5em'>記録中...</span><br><i class='fa fa-stop fa-fw'></i>終了")
-    recording = true
-  }
-}
-
-function _refreshLogTable(){
-  let tbody = $('#logTable').find('tbody')
-  tbody.empty()
-  dataHeaders.forEach(function(header){
-    let date = moment(header.endedAt)
-    date.locale('ja')
-    tbody.append(
-      "<tr data-timestamp='" + header.endedAt + "'>" +
-      "<td class='center'>" + (header.locked ? "<i class='fa fa-lock'></i>" : "") + "</td>" +
-      "<td class='small'>" + date.format('YYYY-MM-DD') + "<br>" + date.format('hh:mm:ss') + " (" + date.fromNow() + ")</td>" +
-      "<td class='small'>" + header.driver + "<br>" + header.vehicle + "</td>" +
-      "<td class='right'>" + Math.round((header.endedAt - header.startedAt)/100)/10 + "</td>" +
-      "</tr>"
-    )
-  })
-  tbody.find('tr').click(function(){
-    tbody.find('tr').removeClass('row-selected')
-    $(this).addClass('row-selected')
-    selectedLogTimestamp = $(this).data('timestamp')
-    diagram.drawRecord(selectedLogTimestamp)
-  })
-  selectedLogTimestamp = null
-}
-
-function _logDeleteButtonClick(){
-  if (selectedLogTimestamp == null) return
-  _deleteLog(selectedLogTimestamp, true)
-  _refreshLogTable()
-}
-
-function _logLockButtonClick(){
-  if (selectedLogTimestamp == null) return
-  let i = findIndexInDataHeadersFromTimestamp(selectedLogTimestamp)
-  if (i == null) return
-  if (dataHeaders[i].locked) {
-    delete dataHeaders[i].locked
-  } else {
-    dataHeaders[i].locked = true
-  }
-  writeDataHeaders()
-  _refreshLogTable()
-}
-
-function _deleteLog(endedAt, warn = false){
-  // warn: Stop deleting with an alert if the item is locked
-  let i = findIndexInDataHeadersFromTimestamp(endedAt)
-  if (i == null) return
-  if (warn && dataHeaders[i].locked){
-    alert('このデータはロックされているため削除できません')
-    return
-  }
-  dataHeaders.splice(i, 1)
-  writeDataHeaders()
-  localStorage.removeItem("data_" + endedAt)
-}
-
-function writeDataHeaders(){
-  localStorage.setItem("dataHeaders", JSON.stringify(dataHeaders))
-}
-
-function findIndexInDataHeadersFromTimestamp(endedAt){
-  let iFound = null
-  for (let i = 0; i < dataHeaders.length; i++){
-    if (dataHeaders[i].endedAt == endedAt){
-      iFound = i
-      break
-    }
-  }
-  return iFound
-}
-
-function toggleRealtime(bool){
-  // bool: Realtime mode ON or OFF
-  if (bool) {
-    realtimeMonitoring = true
-    $('#backToRealtimeButton').hide()
-  } else {
-    realtimeMonitoring = false
-    $('#backToRealtimeButton').show()
-  }
-}
-
-function _backToRealtimeButtonClick(){
-  toggleRealtime(true)
-}
-
-function _driverNameChange(elem){
-  driverName = $(elem).val()
-  localStorage.setItem("driverName", driverName)
-}
-
-function _vehicleNameChange(elem){
-  vehicleName = $(elem).val()
-  localStorage.setItem("vehicleName", vehicleName)
-}
-
-function _toggleReverseAxis(checked){
-  diagram.reverse = checked
-  localStorage.setItem("reverseAxis", checked)
-}
-
-function _togglePreviewEach(checked){
-  previewEach = checked
-  localStorage.setItem("previewEach", checked)
 }
 
 /* ====================================
