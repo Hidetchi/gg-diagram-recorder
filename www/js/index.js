@@ -4,6 +4,7 @@ var dt = 0.01
 var prevTime = 0
 var ax0, ay0, az0 // Raw sensor acceleration without gravity
 var gx0 = 0, gy0 = 0, gz0 = 0 // Raw sensor acceleration with graviry
+var reverseFactor = 1.0 // Must be changed to -1.0 in iOS
 var ox0, oy0, oz0 // Raw sensor rotation speed
 var alpha, beta, gamma // Raw sensor orientation
 var ex1 = 1, ex2 = 0, ex3 = 0 // Direction cosine of X
@@ -133,6 +134,7 @@ function onDeviceReady(){
   else if (cordova.platformId == 'ios') platform = 'iOS'
   else if (cordova.windowsId == 'windows') platform = 'Windows'
   if (platform == 'Android') AndroidFullScreen.immersiveMode()
+  else if (platform == 'iOS') reverseFactor = -1.0
   //window.open = cordova.InAppBrowser.open
   document.addEventListener("pause", function(){
   }, false)
@@ -161,9 +163,9 @@ function _handleDeviceMotion(e){
   //ax0 = e.acceleration.x
   //ay0 = e.acceleration.y
   //az0 = e.acceleration.z
-  gx0 = 0.85 * gx0 + 0.15 * e.accelerationIncludingGravity.x // Low-pass filter
-  gy0 = 0.85 * gy0 + 0.15 * e.accelerationIncludingGravity.y // Low-pass filter
-  gz0 = 0.85 * gz0 + 0.15 * e.accelerationIncludingGravity.z // Low-pass filter
+  gx0 = 0.85 * gx0 + reverseFactor * 0.15 * e.accelerationIncludingGravity.x // Low-pass filter
+  gy0 = 0.85 * gy0 + reverseFactor * 0.15 * e.accelerationIncludingGravity.y // Low-pass filter
+  gz0 = 0.85 * gz0 + reverseFactor * 0.15 * e.accelerationIncludingGravity.z // Low-pass filter
   ox0 = e.rotationRate.alpha
   oy0 = e.rotationRate.beta
   oz0 = e.rotationRate.gamma

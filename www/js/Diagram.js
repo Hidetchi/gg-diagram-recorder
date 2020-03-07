@@ -25,7 +25,7 @@ class Diagram{
       //this.ctx.fillStyle = "rgb(" + brightness + "," + brightness + "," + brightness + ")"
       //let brightness = Math.round(255 * (this.locusN - buf.length + i) / this.locusN)
       let opacity = 1.0 * (1 - (buf.length - i) / this.locusN)
-      this.ctx.fillStyle = "rgb(255, 255, 255, " + opacity + ")"
+      this.ctx.fillStyle = "rgba(255, 255, 255, " + opacity + ")"
       this.ctx.fill()
     }
     this.ctx.beginPath()
