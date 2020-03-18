@@ -42,9 +42,9 @@
     </div>
     <div class="page" id="pageLog" style="display:none">
       <div class="menu-bar" id="logMenuBar">
-        <a href="javascript:void(0)" id="logPinButton" onclick="_logPinButtonClick()"><i class="fa fa-thumb-tack"></i></a>
-        <a href="javascript:void(0)" id="logLockButton" onclick="_logLockButtonClick()"><i class="fa fa-lock"></i></a>
-        <a href="javascript:void(0)" id="logDeleteButton" onclick="_logDeleteButtonClick()"><i class="fa fa-trash-o"></i></a>
+        <a href="javascript:void(0)" id="logPinButton" onclick="_logPinButtonClick()" tappable="true"><i class="fa fa-thumb-tack"></i></a>
+        <a href="javascript:void(0)" id="logLockButton" onclick="_logLockButtonClick()" tappable="true"><i class="fa fa-lock"></i></a>
+        <a href="javascript:void(0)" id="logDeleteButton" onclick="_logDeleteButtonClick()" tappable="true"><i class="fa fa-trash-o"></i></a>
       </div>
       <div id="logTableWrapper">
         <table id="logTable">
@@ -82,6 +82,7 @@
           <option value="0.3">弱</option>
           <option value="0.15" selected="true">中</option>
           <option value="0.1">強</option>
+          <option value="0.05">MAX</option>
         </select>
       </p>
     </div>
@@ -89,10 +90,10 @@
       <textArea id="logArea"></textArea>
     </div>
     <div class="menu-bar" id="mainMenuBar">
-      <a href="javascript:void(0)" onclick="_showPage('Menu1')"><i class="fa fa-home"></i></a>
-      <a href="javascript:void(0)" onclick="_showPage('Log'); _refreshLogTable()"><i class="fa fa-history"></i></a>
-      <a href="javascript:void(0)" onclick="_showPage('Option')"><i class="fa fa-gear"></i></a>
-      <a href="javascript:void(0)" onclick="_showPage('Debug')" style="display:none"><i class="fa fa-desktop"></i></a>
+      <a href="javascript:void(0)" onclick="_showPage('Menu1')" tappable="true"><i class="fa fa-home"></i></a>
+      <a href="javascript:void(0)" onclick="_showPage('Log'); _refreshLogTable()" tappable="true"><i class="fa fa-history"></i></a>
+      <a href="javascript:void(0)" onclick="_showPage('Option')" tappable="true"><i class="fa fa-gear"></i></a>
+      <a href="javascript:void(0)" onclick="_showPage('Debug')" tappable="true" style="display:none"><i class="fa fa-desktop"></i></a>
     </div>
   </div>
   <div id="calibrationBox">

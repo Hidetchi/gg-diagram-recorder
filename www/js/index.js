@@ -50,6 +50,8 @@ $(function(){
   window.addEventListener("devicemotion", _handleDeviceMotion, true)
   window.addEventListener("deviceorientation", _handleDeviceOrientation, true)
 
+  if (window.plugins && window.plugins.insomnia) window.plugins.insomnia.keepAwake()
+
   // Check Local Storage
   diagram = new Diagram(document.getElementById("diagramCanvas"))
   if (!localStorage.getItem("termsAgreed")){
@@ -80,6 +82,9 @@ $(function(){
   dataHeaders = getLocalStorage("dataHeaders", [])
   _resize()
 
+  tappablize($("button"))
+  tappablize($("[tappable=true]"))
+  tappablize($("label"))
 
   // Measure values on interval
   setInterval(function(){
@@ -243,7 +248,7 @@ function _refreshLogTable(){
       "</tr>"
     )
   })
-  tbody.find('tr').click(function(){
+  tbody.find('tr').on('touchstart', function(){
     tbody.find('tr').removeClass('row-selected')
     $(this).addClass('row-selected')
     selectedLogTimestamp = $(this).data('timestamp')
@@ -491,4 +496,19 @@ function getLocalStorage(key, initial){
   } else {
     return initial
   }
+}
+
+function tappablize(elem, strict = true){
+  // elem: jQuery element
+  elem.on('touchstart', function(e){
+    if (platform == 'iOS') e.preventDefault()
+  })
+  elem.on('touchend', function(e){
+    e.preventDefault()
+    e.stopPropagation()
+    let elm = $(e.target)
+    let x = e.originalEvent.changedTouches[0].clientX
+    let y = e.originalEvent.changedTouches[0].clientY
+    if (!strict || (x >= elm.offset().left && x <= elm.offset().left + elm.width() && y >= elm.offset().top && y <= elm.offset().top + elm.height())) elm.click()
+  })
 }
