@@ -37,8 +37,14 @@
   </div>
   <div id="controlBox">
     <div class="page" id="pageMenu1">
+      <button id="calibrationButton" onclick="_calibrationStep(0)"><i class="fa fa-compass fa-fw"></i>キャリブレーション</button>
+      <br>
       <button id="recordButton" onclick="_recordButtonClick()"><i class="fa fa-circle fa-fw"></i>記録開始</button>
-      <button id="testButton" onclick="_calibrationStep(0)"><i class="fa fa-compass fa-fw"></i>キャリブレーション</button>
+      <br>
+      <label>
+        <input type="checkbox" id="previewEachCheckbox" onchange="_togglePreviewEach(this.checked)">
+        計測毎に結果を表示
+      </label>
     </div>
     <div class="page" id="pageLog" style="display:none">
       <div class="menu-bar" id="logMenuBar">
@@ -69,11 +75,6 @@
           <input type="checkbox" id="reverseAxisCheckbox" onchange="_toggleReverseAxis(this.checked)">
           軸を反転(慣性力方向)
         </label>
-        <br>
-        <label>
-          <input type="checkbox" id="previewEachCheckbox" onchange="_togglePreviewEach(this.checked)">
-          計測毎に結果を表示
-        </label>
       </p>
       <p>
         スムージング:
@@ -98,8 +99,11 @@
   </div>
   <div id="calibrationBox">
     <div id="calibrationStep0">
-      端末を車両に固定した後、車両を停止させてから、スタートをタップ<br>
+      キャリブレーションを開始します。<br>
+      端末を車両に固定した後、車両を停止させてから、スタートをタップして下さい。<br>
       <button onclick="_calibrationStep(1)">スタート</button>
+      &nbsp;
+      <button onclick="_calibrationStep(-1)">キャンセル</button>
     </div>
     <div id="calibrationStep1">
       Z方向を認識中... <br>(2秒間)

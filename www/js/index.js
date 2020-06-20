@@ -19,7 +19,7 @@ var measurementMem3 = []
 var measurementMem4 = []
 var measurementMode = null // 1: Z-calibration, 2: X-calibration
 var buf = [] // buffer for most recent data in realtime
-var nBuf = 1000
+var nBuf = 2000
 var startedAt // Start time of a measurement
 var recording = false // Boolean flag indicating whether it is recording
 var dataHeaders
@@ -118,7 +118,7 @@ $(function(){
       str += beta.toFixed(2) + "\n"
       str += gamma.toFixed(2) + "\n"
       str += interval + "\n"
-      _showLog(str)
+      //_showLog(str)
     }
     buf.push(new State(ax, ay, timeStamp))
     if (buf.length > nBuf) buf.shift()
@@ -407,6 +407,9 @@ function _calibrationStep(n){
       ey1: ey1, ey2: ey2, ey3: ey3,
       ez1: ez1, ez2: ez2, ez3: ez3
     }))
+    $('#controlBox').show()
+    $('#calibrationBox').hide()
+  } else if (n==-1) { // Cancel
     $('#controlBox').show()
     $('#calibrationBox').hide()
   }
