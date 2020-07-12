@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<widget xmlns="http://www.w3.org/ns/widgets" xmlns:android="http://schemas.android.com/apk/res/android" xmlns:cdv="http://cordova.apache.org/ns/1.0" id="dvg.diagram.gg" version="1.0.2" ios-CFBundleVersion="20200311" android-versionCode="1000002">
+<widget xmlns="http://www.w3.org/ns/widgets" xmlns:android="http://schemas.android.com/apk/res/android" xmlns:cdv="http://cordova.apache.org/ns/1.0" id="dvg.diagram.gg" version="1.0.2" ios-CFBundleVersion="20.07.12" android-versionCode="1000002">
   <name>GGDiagram</name>
   <description>
       GG-Diagram realtime measurement
@@ -9,7 +9,6 @@
   </author>
   <content src="index.html"/>
   <plugin name="cordova-plugin-whitelist" spec="1"/>
-  <access origin="*"/>
   <allow-navigation href="*"/>
   <allow-intent href="http://*/*"/>
   <allow-intent href="https://*/*"/>
@@ -71,11 +70,6 @@
     <config-file parent="UIViewControllerBasedStatusBarAppearance" platform="ios" target="*-Info.plist">
       <false/>
     </config-file>
-    <config-file platform="ios" parent="CFBundleLocalizations" target="*-Info.plist">
-      <array>
-        <string>ja</string>
-      </array>
-    </config-file>
     <custom-config-file parent="UISupportedInterfaceOrientations" target="*-Info.plist" mode="replace">
       <array>
         <string>UIInterfaceOrientationLandscapeLeft</string>
@@ -86,6 +80,16 @@
         <string>UIInterfaceOrientationLandscapeLeft</string>
       </array>
     </custom-config-file>
+    <preference name="WKWebViewOnly" value="true"/>
+    <preference name="CordovaWebViewEngine" value="CDVWKWebViewEngine"/>
+    <feature name="CDVWKWebViewEngine">
+      <param name="ios-package" value="CDVWKWebViewEngine"/>
+    </feature>
+    <config-file platform="ios" parent="CFBundleLocalizations" target="*-Info.plist">
+      <array>
+        <string>ja</string>
+      </array>
+    </config-file>
   </platform>
   <preference name="Orientation" value="landscape"/>
   <preference name="Fullscreen" value="true"/>
@@ -106,12 +110,16 @@
   <preference name="PaginationBreakingMode" value="page"/>
   <preference name="PaginationMode" value="unpaginated"/>
   <preference name="UIWebViewDecelerationSpeed" value="normal"/>
-  <preference name="AutoHideSplashScreen" value="true"/>
-  <preference name="FadeSplashScreen" value="true"/>
-  <preference name="ShowSplashScreenSpinner" value="true"/>
-  <preference name="DisallowOverscroll" value="true"/>
-  <preference name="EnableViewportScale" value="false"/>
   <feature name="LocalStorage">
     <param name="ios-package" value="CDVLocalStorage"/>
   </feature>
+  <preference name="WindowsStorePublisherName" value="My Name"/>
+  <preference name="WindowsStoreIdentityName" value="336f09e1-6a44-292d-da06-fda9bd38551c"/>
+  <preference name="ios-XCBuildConfiguration-TARGETED_DEVICE_FAMILY" value="1"/>
+  <preference name="AutoHideSplashScreen" value="true"/>
+  <preference name="FadeSplashScreen" value="true"/>
+  <preference name="ShowSplashScreenSpinner" value="true"/>
+  <access origin="*"/>
+  <preference name="DisallowOverscroll" value="true"/>
+  <preference name="EnableViewportScale" value="false"/>
 </widget>
