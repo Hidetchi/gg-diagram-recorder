@@ -19,7 +19,7 @@ var measurementMem3 = []
 var measurementMem4 = []
 var measurementMode = null // 1: Z-calibration, 2: X-calibration
 var buf = [] // buffer for most recent data in realtime
-var nBuf = 2000
+var nBuf = 3000
 var startedAt // Start time of a measurement
 var recording = false // Boolean flag indicating whether it is recording
 var dataHeaders
