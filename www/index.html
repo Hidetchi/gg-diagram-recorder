@@ -15,6 +15,7 @@
   <script type="text/javascript" src="js/State.js"></script>
   <script type="text/javascript" src="js/Measurement.js"></script>
   <script type="text/javascript" src="js/Diagram.js"></script>
+  <script type="text/javascript" src="js/SoundPlayer.js"></script>
   <script type="text/javascript" src="js/index.js"></script>
 </head>
 <body>
@@ -34,9 +35,13 @@
     </select>
     <button id="animateRecordButton" onclick="_animateRecordButtonClick()"><i class="fa fa-play fa-lg"></i></button>
     <button id="backToRealtimeButton" onclick="_backToRealtimeButtonClick()"><i class="fa fa-times fa-lg"></i></button>
+    <button id="toggleVoiceButton" onclick="_toggleVoiceButtonClick()"><i class="fa fa-volume-off fa-lg"></i></button>
   </div>
   <div id="controlBox">
     <div class="page" id="pageMenu1">
+      <p id="requestMotionPermission" style="display:none;margin:0 0 2vh;padding:0">
+        <button id="requestMotionPermissionButton" onclick="requestMotionPermission()">センサーを許可</button>
+      </p>
       <button id="calibrationButton" onclick="_calibrationStep(0)"><i class="fa fa-compass fa-fw"></i>キャリブレーション</button>
       <br>
       <button id="recordButton" onclick="_recordButtonClick()"><i class="fa fa-circle fa-fw"></i>記録開始</button>
@@ -86,6 +91,21 @@
           <option value="0.05">MAX</option>
         </select>
       </p>
+      <p>
+        読上げ:<br>
+        &emsp;<select id="voiceThresholdSelect" onchange="_voiceThresholdChange(this.value)">
+          <option value="1">1</option>
+          <option value="2" selected="true">2</option>
+          <option value="3">3</option>
+          <option value="4">4</option>
+          <option value="5">5</option>
+          <option value="6">6</option>
+        </select>m/s2以上
+        <select id="voiceIntervalSelect" onchange="_voiceIntervalChange(this.value)">
+          <option value="700">0.7</option>
+          <option value="1000" selected="true">1</option>
+          <option value="1300">1.3</option>
+        </select>秒毎
     </div>
     <div class="page" id="pageDebug" style="display:none">
       <textArea id="logArea"></textArea>

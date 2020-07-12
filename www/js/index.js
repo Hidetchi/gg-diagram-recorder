@@ -30,6 +30,9 @@ var driverName
 var vehicleName
 var previewEach // Boolean option
 var filterStrength = 0.15
+var sp = new SoundPlayer()
+var voiceInterval = null // setInterval id
+var voiceIntervalMilliseconds = 1000
 
 document.addEventListener("deviceready", onDeviceReady, false)
 
@@ -47,8 +50,6 @@ $(function(){
   })
   $(window).on("unload", function(e){
   })
-  window.addEventListener("devicemotion", _handleDeviceMotion, true)
-  window.addEventListener("deviceorientation", _handleDeviceOrientation, true)
 
   if (window.plugins && window.plugins.insomnia) window.plugins.insomnia.keepAwake()
 
@@ -57,6 +58,16 @@ $(function(){
   if (!localStorage.getItem("termsAgreed")){
     alert("【使用上の注意】公道を走行中の画面操作・画面注視は法令違反です。法令を遵守してご使用下さい。")
     localStorage.setItem("termsAgreed", true)
+  }
+
+  if (typeof DeviceMotionEvent.requestPermission === 'function') {
+    // iOS 13+
+    alert("iOS13以上のため、加速度センサの使用許可操作が必要です。「センサー許可」ボタンを押して下さい。")
+    $('#requestMotionPermission').show()
+  } else {
+    // non iOS 13+
+    window.addEventListener("devicemotion", _handleDeviceMotion, true)
+    // window.addEventListener("deviceorientation", _handleDeviceOrientation, true)
   }
 
   diagram.max = getLocalStorage("diagramRange", 10)
@@ -71,6 +82,10 @@ $(function(){
   $('#previewEachCheckbox').prop('checked', previewEach)
   filterStrength = getLocalStorage("filterStrength", 0.15)
   $('#filterStrengthSelect').val(filterStrength)
+  sp.threshold = getLocalStorage("voiceThreshold", 2)
+  $('#voiceThresholdSelect').val(sp.threshold)
+  voiceIntervalMilliseconds = getLocalStorage("voiceInterval", 1000)
+  $('#voiceIntervalSelect').val(voiceIntervalMilliseconds)
 
   let h = getLocalStorage("directionVector", null)
   if (h) {
@@ -114,9 +129,9 @@ $(function(){
       str += ox0.toFixed(2) + "\n"
       str += oy0.toFixed(2) + "\n"
       str += oz0.toFixed(2) + "\n"
-      str += alpha.toFixed(2) + "\n"
-      str += beta.toFixed(2) + "\n"
-      str += gamma.toFixed(2) + "\n"
+      //str += alpha.toFixed(2) + "\n"
+      //str += beta.toFixed(2) + "\n"
+      //str += gamma.toFixed(2) + "\n"
       str += interval + "\n"
       //_showLog(str)
     }
@@ -124,6 +139,20 @@ $(function(){
     if (buf.length > nBuf) buf.shift()
   }, 1000 * dt)
 })
+
+/* ====================================
+    Request sensor permission
+===================================== */
+
+function requestMotionPermission(){
+  DeviceMotionEvent.requestPermission().then( function( response ){
+    if( response === 'granted' ){
+      window.addEventListener("devicemotion", _handleDeviceMotion, true)
+      $('#requestMotionPermission').hide()
+    }
+  }).catch( function(e){
+  });
+}
 
 /* ====================================
     On deviceready
@@ -137,6 +166,7 @@ function onDeviceReady(){
   else if (platform == 'iOS') reverseFactor = -1.0
   //window.open = cordova.InAppBrowser.open
   document.addEventListener("pause", function(){
+    _toggleVoice(false)
   }, false)
   document.addEventListener("resume", function(){
   }, false)
@@ -186,6 +216,9 @@ function _showPage(pageName){
   if (recording) return
   $('.page').hide()
   $('#page' + pageName).show()
+  _toggleVoice(false)
+  if (pageName == 'Menu1') $('#toggleVoiceButton').show()
+  else $('#toggleVoiceButton').hide()
 }
 
 function _clearMeasurement(){
@@ -226,6 +259,31 @@ function _recordButtonClick(){
     startedAt = Date.now()
     $('#recordButton').css('background', '#a22').html("<span style='font-size:0.5em'>記録中...</span><br><i class='fa fa-stop fa-fw'></i>終了")
     recording = true
+  }
+}
+
+function _toggleVoiceButtonClick(){
+  if (voiceInterval) {
+    _toggleVoice(false)
+  } else {
+    _toggleVoice(true)
+  }
+}
+
+function _toggleVoice(onoff){
+  //onoff: boolean
+  if (voiceInterval) {
+    clearInterval(voiceInterval)
+    voiceInterval = null
+  }
+  if (onoff) {
+    voiceInterval = setInterval(function(){
+      let gNorm = Math.floor(Math.sqrt(ax * ax + ay * ay))
+      sp.sayNumber(Math.min(10, gNorm))
+    }, voiceIntervalMilliseconds)
+    $('#toggleVoiceButton').html('<i class="fa fa-volume-up fa-lg">')
+  } else {
+    $('#toggleVoiceButton').html('<i class="fa fa-volume-off fa-lg">')
   }
 }
 
@@ -369,6 +427,16 @@ function _togglePreviewEach(checked){
 function _changeFilterStrength(v){
   filterStrength = v
   localStorage.setItem("filterStrength", filterStrength)
+}
+
+function _voiceThresholdChange(v){
+  sp.threshold = v
+  localStorage.setItem("voiceThreshold", sp.threshold)
+}
+
+function _voiceIntervalChange(v){
+  voiceIntervalMilliseconds = v
+  localStorage.setItem("voiceInterval", voiceIntervalMilliseconds)
 }
 
 /* ====================================
